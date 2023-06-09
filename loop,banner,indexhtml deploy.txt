@@ -1,0 +1,75 @@
+---
+- name: Provisioning Server
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install HTTPD on Centos
+      yum:
+        name: "{{item}}"
+        state: present
+      when: ansible_distribution == "CentOS"
+      loop:
+        - httpd
+        - wget
+        - git
+        - zip
+        - unzip
+        - tree
+    - name: Install packages on Ubuntu
+      apt:
+         name: "{{item}}"
+         state: present
+         update_cache: yes
+      when: ansible_distribution == "Ubuntu"
+      loop:
+        - wget
+        - git
+        - zip
+        - unzip
+        - tree
+    - name: Start & enable HTTPD on Redhat
+      service:
+        name: httpd
+        state: started
+        enabled: yes
+      when: ansible_os_family == "RedHat"
+
+    - name: Add group
+      group:
+         name: devops
+         state: present
+    - name: Add users
+      user:
+          name: "{{item}}"
+          state: present
+          groups: devops
+      loop: "{{usernames}}"
+
+    - name: Banner file update
+      copy:
+         content: "This {{ansible_distribution}} server was configure using ansible.\n"
+         dest: /etc/motd
+    - name: Copy index.html file for Centos
+      copy:
+         src: index.html
+         dest: /var/www/html
+      when: ansible_os_family == "RedHat"
+
+    - name: Deploy kemi page for centos
+      copy:
+          src: kemi.html
+          dest: /var/www/html
+      when: ansible_os_family == "RedHat"
+
+    - name: Configure http server for centos
+      template:
+          src: templates/centos_http_conf.j2
+          dest: /etc/httpd/conf/httpd.conf
+      when: ansible_os_family == "RedHat"
+
+    - name: Restart httpd on Redhat
+      service:
+        name: httpd
+        state: restarted
+        enabled: yes
+      when: ansible_os_family == "RedHat"

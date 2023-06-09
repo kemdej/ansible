@@ -1,0 +1,41 @@
+---
+- name: Setup WebServer
+  become: yes
+  hosts: webserver
+  tasks:
+    - name: installing tomcat
+      yum:
+        name: tomcat
+        state: present
+    - name: Start & enable tomcat
+      service:
+         name: tomcat
+         state: started
+         enabled: yes
+- name: Setup DBserver
+  become: yes
+  hosts: dbserver
+  tasks:
+    - name: Install Mariadb
+      yum:
+        name:
+        - MySQL-python
+        - mariadb-server
+        state: present
+    - name: Start & enable mariadb
+      service:
+         name: mariadb
+         state: started
+         enabled: yes
+    - name: Create new databases with names 'account' and 'log'
+      mysql_db:
+       name:
+       - account
+       - log
+       state: present
+    - name: Create database user with name 'bob' and password '12345' with all database privileges
+      mysql_user:
+        name: bob
+        password: 12345
+        priv: '*.*:ALL'
+        state: present
